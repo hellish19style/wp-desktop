@@ -1,24 +1,29 @@
+image: Visual Studio 2017
+version: '{build}'
+
+platform:
+  - x86
+
 environment:
-  # Add GNU tools (MSYS2) and Docker to PATH
-  PATH: C:\msys64\usr\bin;$(PATH)
+  NVS_VERSION: "1.2.0"
+  NODEJS_VERSION: "10.16.3"
+  PYTHON: "C:\Python27\\python.exe"
   CSC_ENC_KEY:
     secure: ef2yQX3A9dZPQzS6r7oY7pUtzK/ICiUUDZZsh/K7eT59a4BVdxqCfIZU812MmqQHK/iC4cYLdTW+tWHrq9bJquzQgHGjgB0cTBwS9KUjyOg=
-
-image: Visual Studio 2017
-
-# Questions:
-  # - verify other steps in the Circle config. (Side note: Can we add these to the Makefile instead?
-  # - how is download link on website updated?
 
 branches:
   except:
     - gh-pages
 
 install:
-  - git submodule init
-  - git submodule update
-  - ps: Install-Product node $(cat calypso/.nvmrc)
-  - npm install
+  - cmd: set PATH=C:\msys64\usr\bin;%PATH%
+  - cmd: set PATH=%LOCALAPPDATA%\nvs;%PATH%
+  - cmd: git clone --branch v%NVS_VERSION% --depth 1 https://github.com/jasongin/nvs %LOCALAPPDATA%\nvs
+  - cmd: nvs add %NODEJS_VERSION%
+  - cmd: nvs use %NODEJS_VERSION%
+  - cmd: git submodule update --init --recursive
+  - cmd: npm ci
+  - cmd: docker run --rm -it --name node-docker -u node node:10.16.3 /bin/bash "ls;exit"
 
 before_build:
     - openssl aes-256-cbc -md md5 -d -in ./resource/calypso/secrets.json.enc -out ./calypso/config/secrets.json -k "%CSC_ENC_KEY%"
